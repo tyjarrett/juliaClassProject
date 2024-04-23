@@ -5,3 +5,5 @@ it is too big to push to github so will have to download and add to file directo
 since this will be a recurring issue, I propose we just use this one "stock" for our project to mitgate pain
 
 instead, we can each use a diffrent module to graph this data, as spoken about in the initial comments of the code
+
+can split into seperate files to help with work confusion
