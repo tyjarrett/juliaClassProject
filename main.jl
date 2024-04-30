@@ -1,111 +1,85 @@
-import Pkg
-Pkg.add("Plots")
+using CairoMakie
+using CSV
+using DataFrames
 
-using Plots, CSV, DataFrames
+#Just a start but created 2 functions to 
+#plot the prices and volume over time
+#Also tried to create a candlestick graph, 
+#but i think im gonna scratch it and do some other functions
 
-#Let me know what yall think
-#But I got a new idea for each of us
-#to make a plot of this bitcoin data
-#but each use a different package
-#like the ones below
-#PlotlyJS and Makie
+function load_data(filepath)
 
-function openDataset()
-       
-    DataFrame(CSV.File("bitcoin_2017_to_2023.csv"))
+    df = CSV.File(filepath) |> DataFrame
 
-end
+    base_time = nothing
+    seconds_since_start = Float64[]
 
-df = openDataset()
+    for ts in df.timestamp
+        year, month, day, hour, min, sec = parse(Int, ts[1:4]), parse(Int, ts[6:7]), parse(Int, ts[9:10]), parse(Int, ts[12:13]), parse(Int, ts[15:16]), parse(Int, ts[18:19])
+        current_time = ((year * 365 + month * 30 + day) * 24 + hour) * 3600 + min * 60 + sec  
 
-#esseantially just a bunch of functions to graph diffrent parts of the data
-#run addOpenColor then graphOpenByDayWithColor to get color visuals
-
-function printAdjustDateTime(df, length)
-    output = [Dates.DateTime(2023, 8, 1, 13, 19, 0)]
-    last = nrow(df)
-    for i = 2:length
-        push!(output, output[i-1] - Minute(1))
-    end
-    println(output)
-end
-
-function adjustDateTime(df)
-    output = [Dates.DateTime(2023, 8, 1, 13, 19, 0)]
-    last = nrow(df)
-    for i = 2:last
-        push!(output, output[i-1] - Minute(1))
-    end
-    insertcols!(df, 8, :Time => output)
-end
-
-function addOpenColor(df)
-    output = [:green]
-    start = nrow(df)
-    for i = start-1:-1:1
-        if(df[i,2] > df[i+1, 2])
-            pushfirst!(output,:red)
-        else
-            pushfirst!(output,:green)
+        if base_time === nothing
+            base_time = current_time
         end
+
+        push!(seconds_since_start, current_time - base_time)
+
     end
-    insertcols!(df, 8, :Color => output)
+
+    df.seconds_since_start = seconds_since_start
+    df.days_since_start = df.seconds_since_start / (24 * 3600)
+
+    return df
 end
 
-function graphOpen(df, hours)
-    start = nrow(df)
-    plot(df[start:-1:start-hours, 1], df[start:-1:start-hours, 2])
+function plot_data(df)
+    fig = Figure(size=(800, 600))
+    ax = Axis(fig[1, 1], xlabel="Days since start", ylabel="Close Price", title="Bitcoin Close Price Over Time")
+    lines!(ax, df.days_since_start, df.close, color=:blue, linewidth=2)
+    display(fig)
 end
 
-function graphOpen(df, start, hours)
-    start = nrow(df) - start
-    plot(df[start:-1:start-hours, 1], df[start:-1:start-hours, 2])
+function plot_volume(df)
+    fig = Figure(size=(800, 600))
+    ax = Axis(fig[1, 1], xlabel="Days since start", ylabel="Volume", title="Bitcoin Trading Volume Over Time")
+    lines!(ax, df.days_since_start, df.volume, color=:green, linewidth=2)
+    display(fig)
 end
 
-function graphOpenTime(df)
-    start = nrow(df)
-    plot(map(x -> Date(x), df[start:-1:start-100, 9]), df[start:-1:start-100, 2])
+# function plot_candlestick(df)
+#     fig = Figure(size=(1000, 600))
+#     ax = Axis(fig[1, 1], xlabel="Days since start", ylabel="Price", title="Bitcoin Candlestick Chart")
+
+#     for i in 1:length(df.days_since_start)
+#         day = df.days_since_start[i]
+#         open, high, low, close = df.open[i], df.high[i], df.low[i], df.close[i]
+         
+#         lines!(ax, [day, day], [low, high], color=:black)
+
+#         color = open > close ? :red : :green
+
+
+#         rect_width = 0.2   
+#         x_points = [day - rect_width / 2, day + rect_width / 2, day + rect_width / 2, day - rect_width / 2]
+#         y_points = [min(open, close), min(open, close), max(open, close), max(open, close)]
+#         vertices = [x_points[1] y_points[1];   
+#                     x_points[2] y_points[2];
+#                     x_points[3] y_points[3];
+#                     x_points[4] y_points[4]]
+
+#         lines!(ax, x_points, y_points, color=color, linewidth=1, close=true)
+#         poly!(ax, vertices, color=color)
+#     end
+
+#     display(fig)
+# end
+
+
+function main()
+    df = load_data("bitcoin_2017_to_2023.csv")
+    plot_data(df) 
+    plot_volume(df)  
+    # plot_candlestick(df)
 end
 
-function graphOpen(df)
-    start = nrow(df)
-    plot(df[start:-1:1, 1], df[start:-1:1, 2])
-end
-
-function  graphOpenByHour(df, hours)
-
-    plot(df[1:60:hours*60, 1], df[1:60:hours*60, 2])
-    
-end
-
-function  graphOpenByDay(df, days)
-
-    plot(df[1:24*60:days*24*60, 1], df[1:24*60:days*24*60, 2])
-    
-end
-
-function  graphOpenByDay(df, days, start)
-
-    plot(df[start*24*60:24*60:days*24*60 + start*24*60, 1], df[start*24*60:24*60:days*24*60 + start*24*60, 2])
-    
-end
-
-function printColumn(df)
-    output = [:green]
-    start = nrow(df)
-    for i = start-1:-1:start-100
-        if(df[i,2] < df[i+1, 2])
-            pushfirst!(output,:red)
-        else
-            pushfirst!(output,:green)
-        end
-    end
-    println(output)
-end
-
-function  graphOpenByDayWithColor(df, days)
-    ref = true
-    markercolor = [ :green
-                    :red ]
-    plot(df[1:days*24, 1], df[1:days*24, 2], color = df[1:days*24, 9])
-end
+main()
