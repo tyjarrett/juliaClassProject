@@ -1,11 +1,11 @@
+using Pkg
+Pkg.add("Polynomials")
+
+using Polynomials
 using CairoMakie
 using CSV
 using DataFrames
-
-#Just a start but created 2 functions to 
-#plot the prices and volume over time
-#Also tried to create a candlestick graph, 
-#but i think im gonna scratch it and do some other functions
+using Statistics
 
 function load_data(filepath)
 
@@ -74,12 +74,32 @@ end
 #     display(fig)
 # end
 
+function plot_scatter_with_trend(df)
+    fig = Figure(size=(800, 600))
+    ax = Axis(fig[1, 1], xlabel="Days since start", ylabel="Price", title="Bitcoin Price Scatter with Trend")
+
+    scatterplot = scatter!(ax, df.days_since_start, df.high, color=:red, label="High Prices")
+
+    p = fit(df.days_since_start, df.high, 1) 
+
+    trendline_x = minimum(df.days_since_start):maximum(df.days_since_start)
+    trendline_y = p.(trendline_x)
+
+    trendline = lines!(ax, trendline_x, trendline_y, color=:blue, linewidth=2, label="Trend Line")
+
+    legend = Legend(fig[1, 2], [scatterplot, trendline], ["High Prices", "Trend Line"])
+    fig[1, 2] = legend
+    legend.backgroundcolor = (:white, 0.5)
+
+    display(fig)
+end
 
 function main()
     df = load_data("bitcoin_2017_to_2023.csv")
-    plot_data(df) 
+    plot_data(df)  
     plot_volume(df)  
     # plot_candlestick(df)
+    plot_scatter_with_trend(df)
 end
 
 main()
