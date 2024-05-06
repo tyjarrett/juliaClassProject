@@ -50,6 +50,38 @@ function addOpenColor(df)
     insertcols!(df, 8, :Color => output)
 end
 
+function graphOpen(df, hours)
+    start = nrow(df)
+    plot(df[start:-1:start-hours, 1], df[start:-1:start-hours, 2])
+end
+
+function graphOpen(df, start, hours)
+    start = nrow(df) - start
+    plot(df[start:-1:start-hours, 1], df[start:-1:start-hours, 2])
+end
+
+function graphOpenTime(df)
+    start = nrow(df)
+    plot(map(x -> Date(x), df[start:-1:start-100, 9]), df[start:-1:start-100, 2])
+end
+
+function graphOpen(df)
+    start = nrow(df)
+    plot(df[start:-1:1, 1], df[start:-1:1, 2])
+end
+
+function  graphOpenByHour(df, hours)
+    plot(df[1:60:hours*60, 1], df[1:60:hours*60, 2])
+end
+
+function  graphOpenByDay(df, days)
+    plot(df[1:24*60:days*24*60, 1], df[1:24*60:days*24*60, 2])
+end
+
+function  graphOpenByDay(df, days, start)
+    plot(df[start*24*60:24*60:days*24*60 + start*24*60, 1], df[start*24*60:24*60:days*24*60 + start*24*60, 2])
+end
+
 function printColumn(df)
     output = [:green]
     start = nrow(df)
