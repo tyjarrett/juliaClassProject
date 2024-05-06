@@ -2,8 +2,13 @@ import Pkg
 Pkg.add("Plots")
 Pkg.add("CSV")
 Pkg.add("DataFrames")
+Pkg.add("Polynomials")
+Pkg.add("CairoMakie")
 
 using Plots, CSV, DataFrames
+using Polynomials
+using CairoMakie
+using Statistics
 
 #Let me know what yall think
 #But I got a new idea for each of us
@@ -16,7 +21,65 @@ function openDataset()
     DataFrame(CSV.File("bitcoin_2017_to_2023.csv"))
 end
 
-#esseantially just a bunch of functions to graph diffrent parts of the data
+function load_data(filepath)
+
+    df = CSV.File(filepath) |> DataFrame
+
+    base_time = nothing
+    seconds_since_start = Float64[]
+
+    for ts in df.timestamp
+        year, month, day, hour, min, sec = parse(Int, ts[1:4]), parse(Int, ts[6:7]), parse(Int, ts[9:10]), parse(Int, ts[12:13]), parse(Int, ts[15:16]), parse(Int, ts[18:19])
+        current_time = ((year * 365 + month * 30 + day) * 24 + hour) * 3600 + min * 60 + sec  
+
+        if base_time === nothing
+            base_time = current_time
+        end
+
+        push!(seconds_since_start, current_time - base_time)
+
+    end
+
+    df.seconds_since_start = seconds_since_start
+    df.days_since_start = df.seconds_since_start / (24 * 3600)
+
+    return df
+end
+
+function plot_data(df)
+    fig = Figure(size=(800, 600))
+    ax = Axis(fig[1, 1], xlabel="Days since start", ylabel="Close Price", title="Bitcoin Close Price Over Time")
+    lines!(ax, df.days_since_start, df.close, color=:blue, linewidth=2)
+    display(fig)
+end
+
+function plot_volume(df)
+    fig = Figure(size=(800, 600))
+    ax = Axis(fig[1, 1], xlabel="Days since start", ylabel="Volume", title="Bitcoin Trading Volume Over Time")
+    lines!(ax, df.days_since_start, df.volume, color=:green, linewidth=2)
+    display(fig)
+end
+
+# function plot_scatter_with_trend(df)
+#     fig = Figure(size=(800, 600))
+#     ax = Axis(fig[1, 1], xlabel="Days since start", ylabel="Price", title="Bitcoin Price Scatter with Trend")
+
+#     scatterplot = Makie.scatter!(ax, df.days_since_start, df.high, color=:red, label="High Prices")
+
+#     p = Makie.fit(df.days_since_start, df.high, 1) 
+
+#     trendline_x = minimum(df.days_since_start):maximum(df.days_since_start)
+#     trendline_y = p.(trendline_x)
+
+#     trendline = lines!(ax, trendline_x, trendline_y, color=:blue, linewidth=2, label="Trend Line")
+
+#     legend = Legend(fig[1, 2], [scatterplot, trendline], ["High Prices", "Trend Line"])
+#     fig[1, 2] = legend
+#     legend.backgroundcolor = (:white, 0.5)
+
+#     display(fig)
+# end
+# #esseantially just a bunch of functions to graph diffrent parts of the data
 #run addOpenColor then graphOpenByDayWithColor to get color visuals
 
 function printAdjustDateTime(df, length)
@@ -144,8 +207,9 @@ function boxSomeVars(df, days)
     PlotlyJS.plot([t1, t2, t3, t4])
 end
 
-# main
+
 df = openDataset()
+df2 = load_data("bitcoin_2017_to_2023.csv")
 addOpenColor(df)
 display(graphOpenByDayWithColor(df, 10))
 display(histogramOfPrices(df))
@@ -155,3 +219,6 @@ display(candlestickByDays(df, 1))
 display(heatmapHighToLowByVolumeByDays(df, 1))
 display(areaOfNumTradesToVolumeByDays(df, 100))
 display(boxSomeVars(df, 100))
+plot_data(df2)  
+plot_volume(df2)  
+# plot_scatter_with_trend(df2)
